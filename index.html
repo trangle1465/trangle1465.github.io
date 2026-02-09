@@ -26,6 +26,7 @@
       text-align: center;
       box-shadow: 0 18px 40px rgba(0,0,0,.12);
       position: relative;
+      z-index: 1;
     }
     h1 { margin: 0 0 10px; font-size: 34px; }
     p { margin: 0 0 20px; font-size: 16px; line-height: 1.5; }
@@ -44,8 +45,21 @@
     }
     button:hover { transform: translateY(-1px); }
     .yes { background: #ff3b7a; color: white; }
-    .no { background: #ffffff; color: #ff3b7a; border: 2px solid #ff3b7a; position: relative; }
-    .footer { margin-top: 18px; font-size: 13px; opacity: .85; }
+
+    /* No button: always stays on top and runs away */
+    .no {
+      background: #ffffff;
+      color: #ff3b7a;
+      border: 2px solid #ff3b7a;
+
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      transition: left 140ms ease, top 140ms ease;
+      z-index: 9999;
+    }
+
     .hearts {
       position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 24px;
     }
@@ -61,9 +75,11 @@
       15% { opacity: .8; }
       to { transform: translateY(-520px) scale(1.2); opacity: 0; }
     }
+
     .modal {
       position: fixed; inset: 0; display: none; place-items: center; padding: 20px;
       background: rgba(0,0,0,.28);
+      z-index: 9998;
     }
     .modalInner {
       width: min(520px, 94vw);
@@ -73,29 +89,27 @@
       text-align: center;
       box-shadow: 0 18px 50px rgba(0,0,0,.22);
     }
-    .big { font-size: 20px; margin: 0 0 8px; }
-    .small { margin: 0 0 14px; opacity: .9; }
+    .big { font-size: 22px; margin: 0 0 10px; }
     .close { background:#111; color:#fff; }
   </style>
 </head>
+
 <body>
   <div class="card">
     <div class="hearts" id="hearts"></div>
+
     <h1>Hey <span class="name" id="herName">Love</span> 💖</h1>
-    <p>
-      
-      <br /><br />
-      Will you be my Valentine?
-    </p>
+    <p>Will you be my Valentine?</p>
 
     <div class="btns">
       <button class="yes" id="yesBtn">Yes 💘</button>
       <button class="no" id="noBtn">No 🙈</button>
     </div>
+  </div>
 
   <div class="modal" id="modal">
     <div class="modalInner">
-      <p class="big">YAYYYYYYYYYYY!!!</p>
+      <p class="big">YAYYYYYYYYYYY!!! 💞</p>
       <button class="close" id="closeBtn">Close</button>
     </div>
   </div>
@@ -105,10 +119,6 @@
     const params = new URLSearchParams(location.search);
     const name = params.get("name");
     if (name) document.getElementById("herName").textContent = name;
-
-    // Date
-    const d = new Date();
-    document.getElementById("today").textContent = d.toLocaleDateString(undefined, { year:"numeric", month:"long", day:"numeric" });
 
     // Floating hearts
     const hearts = ["💗","💖","💘","💕","💞","❤️","🌹"];
@@ -135,20 +145,62 @@
     document.getElementById("closeBtn").addEventListener("click", () => modal.style.display = "none");
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
 
-    // “Not yet” button runs away
+    // No button runs away from pointer (mouse/touch) — stays on screen
     const noBtn = document.getElementById("noBtn");
-    function moveNo(){
-      const pad = 14;
-      const maxX = window.innerWidth - noBtn.offsetWidth - pad;
-      const maxY = window.innerHeight - noBtn.offsetHeight - pad;
-      const x = Math.max(pad, Math.random()*maxX);
-      const y = Math.max(pad, Math.random()*maxY);
-      noBtn.style.position = "fixed";
-      noBtn.style.left = x + "px";
-      noBtn.style.top = y + "px";
+
+    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
+    function moveNoAwayFrom(pointerX, pointerY) {
+      const pad = 16;
+
+      const rect = noBtn.getBoundingClientRect();
+      const bx = rect.left + rect.width / 2;
+      const by = rect.top + rect.height / 2;
+
+      let dx = bx - pointerX;
+      let dy = by - pointerY;
+
+      if (dx === 0 && dy === 0) {
+        dx = (Math.random() - 0.5);
+        dy = (Math.random() - 0.5);
+      }
+
+      const len = Math.hypot(dx, dy);
+      dx /= len; dy /= len;
+
+      const step = 180; // jump distance
+      const targetX = bx + dx * step;
+      const targetY = by + dy * step;
+
+      const minX = pad + rect.width / 2;
+      const maxX = window.innerWidth - pad - rect.width / 2;
+      const minY = pad + rect.height / 2;
+      const maxY = window.innerHeight - pad - rect.height / 2;
+
+      const newCenterX = clamp(targetX, minX, maxX);
+      const newCenterY = clamp(targetY, minY, maxY);
+
+      noBtn.style.left = `${newCenterX}px`;
+      noBtn.style.top = `${newCenterY}px`;
+      noBtn.style.transform = "translate(-50%, -50%)";
     }
-    noBtn.addEventListener("mouseover", moveNo);
-    noBtn.addEventListener("touchstart", (e)=>{ e.preventDefault(); moveNo(); }, {passive:false});
+
+    // Move when cursor gets close (feels more playful than only on hover)
+    document.addEventListener("mousemove", (e) => {
+      const rect = noBtn.getBoundingClientRect();
+      const bx = rect.left + rect.width / 2;
+      const by = rect.top + rect.height / 2;
+      const dist = Math.hypot(bx - e.clientX, by - e.clientY);
+
+      if (dist < 120) moveNoAwayFrom(e.clientX, e.clientY);
+    });
+
+    // Mobile: run away when she tries to tap it
+    noBtn.addEventListener("touchstart", (e) => {
+      const t = e.touches[0];
+      moveNoAwayFrom(t.clientX, t.clientY);
+      e.preventDefault();
+    }, { passive: false });
 
     // Tiny confetti (no libraries)
     function confettiBurst(){
@@ -161,6 +213,7 @@
         s.style.top = (window.innerHeight/2) + "px";
         s.style.fontSize = (12 + Math.random()*14) + "px";
         s.style.pointerEvents = "none";
+        s.style.zIndex = 9997;
         document.body.appendChild(s);
 
         const dx = (Math.random()-0.5) * 700;
