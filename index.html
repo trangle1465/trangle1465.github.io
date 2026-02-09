@@ -18,7 +18,7 @@
       overflow:hidden;
     }
 
-    /* Card is ~2/3 of screen */
+    /* Big card: ~2/3 of screen */
     .card{
       width: 66vw;
       height: 66vh;
@@ -34,24 +34,21 @@
       padding: 50px 40px;
       text-align:center;
       box-shadow:0 18px 40px rgba(0,0,0,.12);
-      position:relative;
-      overflow:hidden;
+      position:relative;   /* IMPORTANT for No button roaming */
+      overflow:hidden;     /* keep hearts + No inside card */
     }
 
     h1{ margin:0 0 10px; font-size:36px; }
     p{ margin:0 0 26px; font-size:17px; line-height:1.5; }
     .name{ font-weight:700; }
 
-    /* ✅ Centered "button arena" under the question */
     .btns{
-      position: relative;          /* positioning context for No button */
-      width: 100%;
-      max-width: 520px;            /* arena width */
-      height: 140px;               /* arena height (more room to dodge) */
-      margin: 10px auto 0;         /* centers arena under question */
       display:flex;
+      gap:14px;
       justify-content:center;
       align-items:center;
+      margin-top: 12px;
+      position: relative;
       z-index: 2;
     }
 
@@ -68,29 +65,20 @@
       white-space: nowrap;
     }
     button:hover{ transform: translateY(-1px); }
+    .yes{ background:#ff3b7a; color:white; }
 
-    /* Yes is slightly left of center */
-    .yes{
-      background:#ff3b7a;
-      color:white;
-      position:absolute;
-      left: calc(50% - 95px);
-      top: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    /* No starts next to Yes (slightly right of center) */
+    /* No button is positioned relative to the CARD, so it can roam */
     .no{
       background:#ffffff;
       color:#ff3b7a;
       border:2px solid #ff3b7a;
 
       position:absolute;
-      left: calc(50% + 95px);
+      left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
       transition: left 120ms ease, top 120ms ease;
-      z-index: 10;
+      z-index: 3;
     }
 
     .hearts{
@@ -139,17 +127,18 @@
 </head>
 
 <body>
-  <div class="card">
+  <div class="card" id="card">
     <div class="hearts" id="hearts"></div>
 
     <h1>Hey <span class="name" id="herName">Love</span> 💖</h1>
     <p>Will you be my Valentine?</p>
 
-    <!-- ✅ This whole area is centered under the question -->
-    <div class="btns" id="arena">
+    <div class="btns" id="btnRow">
       <button class="yes" id="yesBtn">Yes 💘</button>
-      <button class="no" id="noBtn">No 🙈</button>
     </div>
+
+    <!-- No button is NOT in the row anymore so it can roam -->
+    <button class="no" id="noBtn">No 🙈</button>
   </div>
 
   <div class="modal" id="modal">
@@ -190,14 +179,34 @@
     document.getElementById("closeBtn").addEventListener("click", () => modal.style.display = "none");
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
 
-    // No button dodges inside the centered arena (so it stays "centered to the question")
     const noBtn = document.getElementById("noBtn");
-    const arena = document.getElementById("arena");
+    const card = document.getElementById("card");
+    const yesBtn = document.getElementById("yesBtn");
 
     function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
 
+    // Start No next to Yes (inside the card)
+    function placeNoNextToYes(){
+      const c = card.getBoundingClientRect();
+      const y = yesBtn.getBoundingClientRect();
+      const b = noBtn.getBoundingClientRect();
+
+      const startCX = (y.right - c.left) + b.width/2 + 16;  // to the right of Yes
+      const startCY = (y.top + y.bottom)/2 - c.top;
+
+      const minCX = b.width/2 + 10;
+      const maxCX = c.width - b.width/2 - 10;
+      const minCY = b.height/2 + 10;
+      const maxCY = c.height - b.height/2 - 10;
+
+      noBtn.style.left = `${clamp(startCX, minCX, maxCX)}px`;
+      noBtn.style.top  = `${clamp(startCY, minCY, maxCY)}px`;
+    }
+    window.addEventListener("load", placeNoNextToYes);
+    window.addEventListener("resize", placeNoNextToYes);
+
     function moveNoAwayFrom(pointerX, pointerY){
-      const a = arena.getBoundingClientRect();
+      const c = card.getBoundingClientRect();
       const b = noBtn.getBoundingClientRect();
 
       const bx = b.left + b.width/2;
@@ -210,31 +219,33 @@
       const len = Math.hypot(dx, dy);
       dx /= len; dy /= len;
 
-      const step = 170;
+      const step = 220; // bigger card = bigger dodges
 
-      const targetCX = bx + dx * step;
-      const targetCY = by + dy * step;
+      const targetCX_view = bx + dx * step;
+      const targetCY_view = by + dy * step;
 
-      const minCX = a.left + b.width/2 + 10;
-      const maxCX = a.right - b.width/2 - 10;
-      const minCY = a.top + b.height/2 + 10;
-      const maxCY = a.bottom - b.height/2 - 10;
+      // Clamp inside card (in viewport coords)
+      const minCX_view = c.left + b.width/2 + 10;
+      const maxCX_view = c.right - b.width/2 - 10;
+      const minCY_view = c.top + b.height/2 + 10;
+      const maxCY_view = c.bottom - b.height/2 - 10;
 
-      const newCX = clamp(targetCX, minCX, maxCX);
-      const newCY = clamp(targetCY, minCY, maxCY);
+      const newCX_view = clamp(targetCX_view, minCX_view, maxCX_view);
+      const newCY_view = clamp(targetCY_view, minCY_view, maxCY_view);
 
-      // Convert to arena-local coordinates
-      noBtn.style.left = `${newCX - a.left}px`;
-      noBtn.style.top  = `${newCY - a.top}px`;
+      // Convert to card-local coords
+      noBtn.style.left = `${newCX_view - c.left}px`;
+      noBtn.style.top  = `${newCY_view - c.top}px`;
     }
 
-    const chaseRadius = 140;
+    const chaseRadius = 160;
 
     document.addEventListener("mousemove", (e) => {
       const b = noBtn.getBoundingClientRect();
       const bx = b.left + b.width/2;
       const by = b.top + b.height/2;
       const dist = Math.hypot(bx - e.clientX, by - e.clientY);
+
       if (dist < chaseRadius) moveNoAwayFrom(e.clientX, e.clientY);
     });
 
