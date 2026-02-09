@@ -16,41 +16,69 @@
       color:var(--text);
       background: radial-gradient(circle at top, var(--bg1), var(--bg2));
       overflow:hidden;
+      padding: 14px;
     }
 
-    /* Big card: ~2/3 of screen */
+    /* Card: responsive for 16:10 and smaller heights */
     .card{
-      width: 66vw;
-      height: 66vh;
-      max-width: 900px;
-      max-height: 650px;
-      min-width: 420px;
-      min-height: 360px;
+      width: min(900px, 92vw);
+      max-height: min(650px, 86vh);
+      min-width: 320px;
 
       background: rgba(255,255,255,.75);
       border:1px solid rgba(255,255,255,.9);
       backdrop-filter: blur(8px);
       border-radius:24px;
-      padding: 50px 40px;
+      padding: 26px 22px;
       text-align:center;
       box-shadow:0 18px 40px rgba(0,0,0,.12);
-      position:relative;   /* IMPORTANT for No button roaming */
-      overflow:hidden;     /* keep hearts + No inside card */
+      position:relative;
+
+      display:flex;
+      flex-direction:column;
+
+      /* IMPORTANT: don't clip content; only hearts should clip */
+      overflow: visible;
     }
 
-    h1{ margin:0 0 10px; font-size:36px; }
-    p{ margin:0 0 26px; font-size:17px; line-height:1.5; }
+    /* Hearts are clipped inside card */
+    .hearts{
+      position:absolute; inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      border-radius:24px;
+      z-index: 1;
+    }
+
+    /* Content layer scrolls if needed (short screens) */
+    .content{
+      position: relative;
+      z-index: 2;
+
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap: 10px;
+
+      min-height: 0;      /* allows flex child to shrink */
+      overflow:auto;      /* scroll if needed */
+      padding-bottom: 8px;
+    }
+
+    h1{ margin:0; font-size: clamp(28px, 3.5vw, 36px); }
+    p{ margin:0 0 6px; font-size:16px; line-height:1.5; }
     .name{ font-weight:700; }
 
     .pic{
-      width: min(380px, 80%);
-      height: 350px;
-      object-fit: cover;      /* crops nicely */
+      width: min(380px, 86%);
+      height: clamp(180px, 34vh, 320px);  /* responsive height fixes 16:10 clipping */
+      object-fit: cover;
       border-radius: 18px;
-      margin: 14px auto 18px;
+      margin: 6px auto 4px;
       display: block;
       box-shadow: 0 12px 28px rgba(0,0,0,.14);
       border: 1px solid rgba(255,255,255,.9);
+      flex: 0 0 auto;
     }
 
     .btns{
@@ -58,10 +86,11 @@
       gap:14px;
       justify-content:center;
       align-items:center;
-      margin-top: 12px;
+      margin-top: 6px;
       position: relative;
-      left: -55px;
+      left: 0;      /* remove the offset that can misplace buttons */
       z-index: 2;
+      flex: 0 0 auto;
     }
 
     button{
@@ -79,7 +108,7 @@
     button:hover{ transform: translateY(-1px); }
     .yes{ background:#ff3b7a; color:white; }
 
-    /* No button is positioned relative to the CARD, so it can roam */
+    /* No button roams, positioned relative to the CARD */
     .no{
       background:#ffffff;
       color:#ff3b7a;
@@ -91,14 +120,6 @@
       transform: translate(-50%, -50%);
       transition: left 120ms ease, top 120ms ease;
       z-index: 3;
-    }
-
-    .hearts{
-      position:absolute; inset:0;
-      pointer-events:none;
-      overflow:hidden;
-      border-radius:24px;
-      z-index: 1;
     }
 
     .heart{
@@ -115,6 +136,7 @@
       to { transform: translateY(-720px) scale(1.2); opacity:0; }
     }
 
+    /* Modal (kept in case you want it later) */
     .modal{
       position:fixed; inset:0;
       display:none;
@@ -142,20 +164,24 @@
   <div class="card" id="card">
     <div class="hearts" id="hearts"></div>
 
-    <h1>Hey <span class="name" id="herName">Helen BaoDuong</span> 💖</h1>
-    <img
-      class="pic"
-      id="valPic"
-      src="GI0F6dHW8AA6cCY.jpg"
-      alt="Us"
-    />
-    <p>Will you be my Valentine?</p>
+    <div class="content" id="content">
+      <h1>Hey <span class="name" id="herName">Helen BaoDuong</span> 💖</h1>
 
-    <div class="btns" id="btnRow">
-      <button class="yes" id="yesBtn">Yes 💘</button>
+      <img
+        class="pic"
+        id="valPic"
+        src="GI0F6dHW8AA6cCY.jpg"
+        alt="Us"
+      />
+
+      <p>Will you be my Valentine?</p>
+
+      <div class="btns" id="btnRow">
+        <button class="yes" id="yesBtn">Yes 💘</button>
+      </div>
     </div>
 
-    <!-- No button is NOT in the row anymore so it can roam -->
+    <!-- No button is NOT in the row so it can roam -->
     <button class="no" id="noBtn">No 🙈</button>
   </div>
 
@@ -172,13 +198,24 @@
     const name = params.get("name");
     if (name) document.getElementById("herName").textContent = name;
 
+    // Elements
+    const card = document.getElementById("card");
+    const noBtn = document.getElementById("noBtn");
+    const yesBtn = document.getElementById("yesBtn");
+
     // Floating hearts
-    const hearts = ["💗","💖","💘","💕","💞","❤️","🌹"];
-    const heartsWrap = document.getElementById("hearts");
+    const heartEmojis = ["💗","💖","💘","💕","💞","❤️","🌹"];
+    let heartsWrap = document.getElementById("hearts");
+
     function spawnHeart(){
+      // if heartsWrap got replaced for any reason, re-grab it
+      if (!heartsWrap || !document.body.contains(heartsWrap)) {
+        heartsWrap = document.getElementById("hearts");
+        if (!heartsWrap) return;
+      }
       const el = document.createElement("div");
       el.className = "heart";
-      el.textContent = hearts[Math.floor(Math.random()*hearts.length)];
+      el.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)];
       el.style.left = Math.random()*100 + "%";
       el.style.bottom = "-10px";
       el.style.animationDuration = (3 + Math.random()*3) + "s";
@@ -188,62 +225,16 @@
     }
     setInterval(spawnHeart, 350);
 
-    // Modal on Yes
-    document.getElementById("yesBtn").addEventListener("click", () => {
-      confettiBurst();
-    
-      const her = document.getElementById("herName")?.textContent || "Love";
-    
-      // Replace everything inside the card with a centered layout
-      card.innerHTML = `
-        <div class="hearts" id="hearts"></div>
-    
-        <div style="
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          position: relative;
-          z-index: 2;
-          padding: 20px;
-        ">
-          <h1 style="font-size: 56px; margin: 0 0 14px;">YAYYYYYYYYY!!!! 💞</h1>
-          <p style="font-size: 20px; margin: 0;">You’re my Valentine 😘</p>
-        </div>
-      `;
-    
-      // Restart floating hearts after replacing HTML
-      const heartsWrap2 = document.getElementById("hearts");
-      const hearts2 = ["💗","💖","💘","💕","💞","❤️","🌹"];
-      function spawnHeart2(){
-        const el = document.createElement("div");
-        el.className = "heart";
-        el.textContent = hearts2[Math.floor(Math.random()*hearts2.length)];
-        el.style.left = Math.random()*100 + "%";
-        el.style.bottom = "-10px";
-        el.style.animationDuration = (3 + Math.random()*3) + "s";
-        el.style.fontSize = (14 + Math.random()*18) + "px";
-        heartsWrap2.appendChild(el);
-        setTimeout(()=> el.remove(), 6500);
-      }
-      setInterval(spawnHeart2, 250);
-    });
-
-    const noBtn = document.getElementById("noBtn");
-    const card = document.getElementById("card");
-    const yesBtn = document.getElementById("yesBtn");
-
     function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
 
-    // Start No next to Yes (inside the card)
+    // Place No next to Yes (in a safe visible area)
     function placeNoNextToYes(){
       const c = card.getBoundingClientRect();
       const y = yesBtn.getBoundingClientRect();
       const b = noBtn.getBoundingClientRect();
 
-      const startCX = (y.right - c.left) + b.width/2 + 16;  // to the right of Yes
+      // Prefer to the right of "Yes"
+      const startCX = (y.right - c.left) + b.width/2 + 16;
       const startCY = (y.top + y.bottom)/2 - c.top;
 
       const minCX = b.width/2 + 10;
@@ -268,15 +259,14 @@
       let dy = by - pointerY;
       if (dx === 0 && dy === 0){ dx = (Math.random()-0.5); dy = (Math.random()-0.5); }
 
-      const len = Math.hypot(dx, dy);
+      const len = Math.hypot(dx, dy) || 1;
       dx /= len; dy /= len;
 
-      const step = 220; // bigger card = bigger dodges
+      const step = 220;
 
       const targetCX_view = bx + dx * step;
       const targetCY_view = by + dy * step;
 
-      // Clamp inside card (in viewport coords)
       const minCX_view = c.left + b.width/2 + 10;
       const maxCX_view = c.right - b.width/2 - 10;
       const minCY_view = c.top + b.height/2 + 10;
@@ -285,19 +275,16 @@
       const newCX_view = clamp(targetCX_view, minCX_view, maxCX_view);
       const newCY_view = clamp(targetCY_view, minCY_view, maxCY_view);
 
-      // Convert to card-local coords
       noBtn.style.left = `${newCX_view - c.left}px`;
       noBtn.style.top  = `${newCY_view - c.top}px`;
     }
 
     const chaseRadius = 160;
-
     document.addEventListener("mousemove", (e) => {
       const b = noBtn.getBoundingClientRect();
       const bx = b.left + b.width/2;
       const by = b.top + b.height/2;
       const dist = Math.hypot(bx - e.clientX, by - e.clientY);
-
       if (dist < chaseRadius) moveNoAwayFrom(e.clientX, e.clientY);
     });
 
@@ -307,7 +294,7 @@
       e.preventDefault();
     }, { passive:false });
 
-    // Tiny confetti (no libraries)
+    // Confetti (no libraries)
     function confettiBurst(){
       const count = 120;
       for (let i=0; i<count; i++){
@@ -336,6 +323,36 @@
         })(start);
       }
     }
+
+    // On Yes: confetti + replace card content with centered message
+    yesBtn.addEventListener("click", () => {
+      confettiBurst();
+      const her = document.getElementById("herName")?.textContent || "Love";
+
+      card.innerHTML = `
+        <div class="hearts" id="hearts"></div>
+        <div class="content" style="
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          position: relative;
+          z-index: 2;
+          padding: 20px;
+        ">
+          <h1 style="font-size: clamp(40px, 6vw, 56px); margin: 0 0 14px;">YAYYYYYYYYY!!!! 💞</h1>
+          <p style="font-size: 20px; margin: 0;">You’re my Valentine 😘</p>
+        </div>
+      `;
+
+      // Re-bind heartsWrap after replacing DOM
+      heartsWrap = document.getElementById("hearts");
+
+      // Restart hearts a bit faster on the yay screen
+      setInterval(spawnHeart, 250);
+    });
   </script>
 </body>
 </html>
