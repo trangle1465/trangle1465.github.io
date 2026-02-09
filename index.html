@@ -10,7 +10,7 @@
 
     body{
       margin:0;
-      min-height:900vh;
+      min-height:100vh;
       display:grid;
       place-items:center;
       color:var(--text);
@@ -20,9 +20,16 @@
 
     /* ✅ WIDER “window” (card) */
     .card{
-      width:min(900px, 94vw);     /* was 520px */
-      min-height: 900px;        /* change 460px */
-      padding: 50px 40px;       /* change padding */
+      width: 66vw;        /* 2/3 of screen width */
+      height: 66vh;       /* 2/3 of screen height */
+    
+      max-width: 900px;   /* optional: prevents it getting TOO huge on large screens */
+      max-height: 650px;  /* optional */
+      min-width: 420px;   /* optional: prevents it getting too small */
+      min-height: 360px;  /* optional */
+    
+      padding: 50px 40px; /* makes it feel roomy */
+      overflow: hidden;   /* keeps hearts inside nicely */
       background: rgba(255,255,255,.75);
       border:1px solid rgba(255,255,255,.9);
       backdrop-filter: blur(8px);
