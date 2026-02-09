@@ -18,39 +18,40 @@
       overflow:hidden;
     }
 
+    /* ✅ WIDER “window” (card) */
     .card{
-      width:min(520px, 92vw);
+      width:min(720px, 94vw);     /* was 520px */
       background: rgba(255,255,255,.75);
       border:1px solid rgba(255,255,255,.9);
       backdrop-filter: blur(8px);
       border-radius:24px;
-      padding:28px 22px;
+      padding:34px 26px;          /* slightly more padding */
       text-align:center;
       box-shadow:0 18px 40px rgba(0,0,0,.12);
       position:relative;
       z-index:1;
     }
 
-    h1{ margin:0 0 10px; font-size:34px; }
-    p{ margin:0 0 20px; font-size:16px; line-height:1.5; }
+    h1{ margin:0 0 10px; font-size:36px; }
+    p{ margin:0 0 22px; font-size:17px; line-height:1.5; }
     .name{ font-weight:700; }
 
-    /* Button row centered under the question */
+    /* ✅ Bigger chase “arena” for the No button */
     .btns{
       position: relative;
       width: 100%;
-      max-width: 360px;          /* keeps the row centered & neat */
-      height: 56px;              /* space for No to dodge */
-      margin: 10px auto 0;       /* center the row inside the card */
+      max-width: 560px;           /* was 360px */
+      height: 90px;               /* was 56px */
+      margin: 14px auto 0;
       display: flex;
-      gap: 12px;
+      gap: 14px;
       justify-content: center;
       align-items: center;
     }
 
     button{
       border:0;
-      padding:12px 18px;
+      padding:13px 20px;
       border-radius:999px;
       font-size:16px;
       cursor:pointer;
@@ -64,14 +65,13 @@
 
     .yes{ background:#ff3b7a; color:white; }
 
-    /* No button: starts next to Yes, but can move inside .btns */
     .no{
       background:#ffffff;
       color:#ff3b7a;
       border:2px solid #ff3b7a;
 
       position:absolute;
-      left: 68%;                 /* visually “next to” Yes in the centered row */
+      left: 70%;
       top: 50%;
       transform: translate(-50%, -50%);
       transition: left 120ms ease, top 120ms ease;
@@ -96,7 +96,7 @@
     @keyframes floatUp{
       from { transform: translateY(30px) scale(.9); opacity:0; }
       15% { opacity:.8; }
-      to { transform: translateY(-520px) scale(1.2); opacity:0; }
+      to { transform: translateY(-720px) scale(1.2); opacity:0; }
     }
 
     .modal{
@@ -109,10 +109,10 @@
     }
 
     .modalInner{
-      width:min(520px, 94vw);
+      width:min(560px, 94vw);
       background:white;
       border-radius:22px;
-      padding:22px;
+      padding:24px;
       text-align:center;
       box-shadow:0 18px 50px rgba(0,0,0,.22);
     }
@@ -173,19 +173,19 @@
     document.getElementById("closeBtn").addEventListener("click", () => modal.style.display = "none");
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
 
-    // No button: stays within the .btns container and dodges the cursor
+    // No button dodges inside the .btns container
     const noBtn = document.getElementById("noBtn");
     const btnRow = document.querySelector(".btns");
 
-    // Ensure the No button starts in the correct centered spot after layout
+    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+
     function setNoStartPosition(){
-      // Place it next to the Yes button, but keep it within the row
       const row = btnRow.getBoundingClientRect();
       const yes = document.getElementById("yesBtn").getBoundingClientRect();
       const b   = noBtn.getBoundingClientRect();
 
-      const desiredCX = (yes.right - row.left) + (b.width/2) + 12; // right of Yes + gap
-      const cx = Math.min(row.width - b.width/2 - 8, Math.max(b.width/2 + 8, desiredCX));
+      const desiredCX = (yes.right - row.left) + (b.width/2) + 14;
+      const cx = Math.min(row.width - b.width/2 - 10, Math.max(b.width/2 + 10, desiredCX));
       const cy = row.height / 2;
 
       noBtn.style.left = `${cx}px`;
@@ -193,8 +193,6 @@
     }
     window.addEventListener("load", setNoStartPosition);
     window.addEventListener("resize", setNoStartPosition);
-
-    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
     function moveNoAwayFrom(pointerX, pointerY) {
       const row = btnRow.getBoundingClientRect();
@@ -211,15 +209,15 @@
       const len = Math.hypot(dx, dy);
       dx /= len; dy /= len;
 
-      const step = 140;
+      const step = 170;
 
       const targetCX = bx + dx * step;
       const targetCY = by + dy * step;
 
-      const minCX = row.left + b.width / 2 + 8;
-      const maxCX = row.right - b.width / 2 - 8;
-      const minCY = row.top + b.height / 2 + 8;
-      const maxCY = row.bottom - b.height / 2 - 8;
+      const minCX = row.left + b.width / 2 + 10;
+      const maxCX = row.right - b.width / 2 - 10;
+      const minCY = row.top + b.height / 2 + 10;
+      const maxCY = row.bottom - b.height / 2 - 10;
 
       const newCX = clamp(targetCX, minCX, maxCX);
       const newCY = clamp(targetCY, minCY, maxCY);
@@ -228,7 +226,7 @@
       noBtn.style.top  = `${newCY - row.top}px`;
     }
 
-    const chaseRadius = 120;
+    const chaseRadius = 140;
 
     document.addEventListener("mousemove", (e) => {
       const b = noBtn.getBoundingClientRect();
