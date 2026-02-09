@@ -18,39 +18,34 @@
       overflow:hidden;
     }
 
-    /* ✅ WIDER “window” (card) */
+    /* Big card: ~2/3 of screen */
     .card{
-      width: 66vw;        /* 2/3 of screen width */
-      height: 66vh;       /* 2/3 of screen height */
-    
-      padding: 50px 40px; /* makes it feel roomy */
-      overflow: hidden;   /* keeps hearts inside nicely */
+      width: 66vw;
+      height: 66vh;
+
       background: rgba(255,255,255,.75);
       border:1px solid rgba(255,255,255,.9);
       backdrop-filter: blur(8px);
       border-radius:24px;
-      padding:34px 26px;          /* slightly more padding */
+      padding: 50px 40px;
       text-align:center;
       box-shadow:0 18px 40px rgba(0,0,0,.12);
-      position:relative;
-      z-index:1;
+      position:relative;   /* IMPORTANT for No button roaming */
+      overflow:hidden;     /* keep hearts + No inside card */
     }
 
     h1{ margin:0 0 10px; font-size:36px; }
-    p{ margin:0 0 22px; font-size:17px; line-height:1.5; }
+    p{ margin:0 0 26px; font-size:17px; line-height:1.5; }
     .name{ font-weight:700; }
 
-    /* ✅ Bigger chase “arena” for the No button */
     .btns{
+      display:flex;
+      gap:14px;
+      justify-content:center;
+      align-items:center;
+      margin-top: 12px;
       position: relative;
-      width: 100%;
-      max-width: 560px;           /* was 360px */
-      height: 90px;               /* was 56px */
-      margin: 14px auto 0;
-      display: flex;
-      gap: 14px;
-      justify-content: center;
-      align-items: center;
+      z-index: 2;
     }
 
     button{
@@ -66,20 +61,20 @@
       white-space: nowrap;
     }
     button:hover{ transform: translateY(-1px); }
-
     .yes{ background:#ff3b7a; color:white; }
 
+    /* No button is positioned relative to the CARD, so it can roam */
     .no{
       background:#ffffff;
       color:#ff3b7a;
       border:2px solid #ff3b7a;
 
       position:absolute;
-      left: 70%;
+      left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
       transition: left 120ms ease, top 120ms ease;
-      z-index: 10;
+      z-index: 3;
     }
 
     .hearts{
@@ -87,6 +82,7 @@
       pointer-events:none;
       overflow:hidden;
       border-radius:24px;
+      z-index: 1;
     }
 
     .heart{
@@ -127,16 +123,18 @@
 </head>
 
 <body>
-  <div class="card">
+  <div class="card" id="card">
     <div class="hearts" id="hearts"></div>
 
     <h1>Hey <span class="name" id="herName">Love</span> 💖</h1>
     <p>Will you be my Valentine?</p>
 
-    <div class="btns">
+    <div class="btns" id="btnRow">
       <button class="yes" id="yesBtn">Yes 💘</button>
-      <button class="no" id="noBtn">No 🙈</button>
     </div>
+
+    <!-- No button is NOT in the row anymore so it can roam -->
+    <button class="no" id="noBtn">No 🙈</button>
   </div>
 
   <div class="modal" id="modal">
@@ -177,65 +175,71 @@
     document.getElementById("closeBtn").addEventListener("click", () => modal.style.display = "none");
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
 
-    // No button dodges inside the .btns container
     const noBtn = document.getElementById("noBtn");
-    const btnRow = document.querySelector(".btns");
+    const card = document.getElementById("card");
+    const yesBtn = document.getElementById("yesBtn");
 
-    function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
+    function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
 
-    function setNoStartPosition(){
-      const row = btnRow.getBoundingClientRect();
-      const yes = document.getElementById("yesBtn").getBoundingClientRect();
-      const b   = noBtn.getBoundingClientRect();
-
-      const desiredCX = (yes.right - row.left) + (b.width/2) + 14;
-      const cx = Math.min(row.width - b.width/2 - 10, Math.max(b.width/2 + 10, desiredCX));
-      const cy = row.height / 2;
-
-      noBtn.style.left = `${cx}px`;
-      noBtn.style.top  = `${cy}px`;
-    }
-    window.addEventListener("load", setNoStartPosition);
-    window.addEventListener("resize", setNoStartPosition);
-
-    function moveNoAwayFrom(pointerX, pointerY) {
-      const row = btnRow.getBoundingClientRect();
+    // Start No next to Yes (inside the card)
+    function placeNoNextToYes(){
+      const c = card.getBoundingClientRect();
+      const y = yesBtn.getBoundingClientRect();
       const b = noBtn.getBoundingClientRect();
 
-      const bx = b.left + b.width / 2;
-      const by = b.top + b.height / 2;
+      const startCX = (y.right - c.left) + b.width/2 + 16;  // to the right of Yes
+      const startCY = (y.top + y.bottom)/2 - c.top;
+
+      const minCX = b.width/2 + 10;
+      const maxCX = c.width - b.width/2 - 10;
+      const minCY = b.height/2 + 10;
+      const maxCY = c.height - b.height/2 - 10;
+
+      noBtn.style.left = `${clamp(startCX, minCX, maxCX)}px`;
+      noBtn.style.top  = `${clamp(startCY, minCY, maxCY)}px`;
+    }
+    window.addEventListener("load", placeNoNextToYes);
+    window.addEventListener("resize", placeNoNextToYes);
+
+    function moveNoAwayFrom(pointerX, pointerY){
+      const c = card.getBoundingClientRect();
+      const b = noBtn.getBoundingClientRect();
+
+      const bx = b.left + b.width/2;
+      const by = b.top + b.height/2;
 
       let dx = bx - pointerX;
       let dy = by - pointerY;
-
-      if (dx === 0 && dy === 0) { dx = (Math.random() - 0.5); dy = (Math.random() - 0.5); }
+      if (dx === 0 && dy === 0){ dx = (Math.random()-0.5); dy = (Math.random()-0.5); }
 
       const len = Math.hypot(dx, dy);
       dx /= len; dy /= len;
 
-      const step = 170;
+      const step = 220; // bigger card = bigger dodges
 
-      const targetCX = bx + dx * step;
-      const targetCY = by + dy * step;
+      const targetCX_view = bx + dx * step;
+      const targetCY_view = by + dy * step;
 
-      const minCX = row.left + b.width / 2 + 10;
-      const maxCX = row.right - b.width / 2 - 10;
-      const minCY = row.top + b.height / 2 + 10;
-      const maxCY = row.bottom - b.height / 2 - 10;
+      // Clamp inside card (in viewport coords)
+      const minCX_view = c.left + b.width/2 + 10;
+      const maxCX_view = c.right - b.width/2 - 10;
+      const minCY_view = c.top + b.height/2 + 10;
+      const maxCY_view = c.bottom - b.height/2 - 10;
 
-      const newCX = clamp(targetCX, minCX, maxCX);
-      const newCY = clamp(targetCY, minCY, maxCY);
+      const newCX_view = clamp(targetCX_view, minCX_view, maxCX_view);
+      const newCY_view = clamp(targetCY_view, minCY_view, maxCY_view);
 
-      noBtn.style.left = `${newCX - row.left}px`;
-      noBtn.style.top  = `${newCY - row.top}px`;
+      // Convert to card-local coords
+      noBtn.style.left = `${newCX_view - c.left}px`;
+      noBtn.style.top  = `${newCY_view - c.top}px`;
     }
 
-    const chaseRadius = 140;
+    const chaseRadius = 160;
 
     document.addEventListener("mousemove", (e) => {
       const b = noBtn.getBoundingClientRect();
-      const bx = b.left + b.width / 2;
-      const by = b.top + b.height / 2;
+      const bx = b.left + b.width/2;
+      const by = b.top + b.height/2;
       const dist = Math.hypot(bx - e.clientX, by - e.clientY);
 
       if (dist < chaseRadius) moveNoAwayFrom(e.clientX, e.clientY);
@@ -245,7 +249,7 @@
       const t = e.touches[0];
       moveNoAwayFrom(t.clientX, t.clientY);
       e.preventDefault();
-    }, { passive: false });
+    }, { passive:false });
 
     // Tiny confetti (no libraries)
     function confettiBurst(){
