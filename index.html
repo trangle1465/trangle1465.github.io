@@ -8,105 +8,115 @@
     :root { --bg1:#fff1f7; --bg2:#ffe7f1; --text:#2a1b22; }
     * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      color: var(--text);
+    body{
+      margin:0;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      color:var(--text);
       background: radial-gradient(circle at top, var(--bg1), var(--bg2));
-      overflow: hidden;
+      overflow:hidden;
     }
 
-    .card {
-      width: min(520px, 92vw);
+    .card{
+      width:min(520px, 92vw);
       background: rgba(255,255,255,.75);
-      border: 1px solid rgba(255,255,255,.9);
+      border:1px solid rgba(255,255,255,.9);
       backdrop-filter: blur(8px);
-      border-radius: 24px;
-      padding: 28px 22px;
-      text-align: center;
-      box-shadow: 0 18px 40px rgba(0,0,0,.12);
-      position: relative;
-      z-index: 1;
+      border-radius:24px;
+      padding:28px 22px;
+      text-align:center;
+      box-shadow:0 18px 40px rgba(0,0,0,.12);
+      position:relative;
+      z-index:1;
     }
 
-    h1 { margin: 0 0 10px; font-size: 34px; }
-    p  { margin: 0 0 20px; font-size: 16px; line-height: 1.5; }
-    .name { font-weight: 700; }
+    h1{ margin:0 0 10px; font-size:34px; }
+    p{ margin:0 0 20px; font-size:16px; line-height:1.5; }
+    .name{ font-weight:700; }
 
-    .btns {
+    /* Button row */
+    .btns{
+      position: relative;          /* container for absolute No button */
+      height: 56px;                /* space to move */
       display: flex;
       gap: 12px;
       justify-content: center;
       align-items: center;
-      flex-wrap: nowrap;
       margin-top: 10px;
     }
 
-    button {
-      border: 0;
-      padding: 12px 18px;
-      border-radius: 999px;
-      font-size: 16px;
-      cursor: pointer;
+    button{
+      border:0;
+      padding:12px 18px;
+      border-radius:999px;
+      font-size:16px;
+      cursor:pointer;
       transition: transform .12s ease, box-shadow .12s ease;
-      box-shadow: 0 10px 18px rgba(0,0,0,.12);
-      user-select: none;
-      touch-action: manipulation;
+      box-shadow:0 10px 18px rgba(0,0,0,.12);
+      user-select:none;
+      touch-action:manipulation;
       white-space: nowrap;
     }
-    button:hover { transform: translateY(-1px); }
+    button:hover{ transform: translateY(-1px); }
 
-    .yes { background: #ff3b7a; color: white; }
+    .yes{ background:#ff3b7a; color:white; }
 
-    /* No starts normal (so it sits NEXT TO Yes) */
-    .no {
-      background: #ffffff;
-      color: #ff3b7a;
-      border: 2px solid #ff3b7a;
-      position: relative; /* initial layout in the row */
-    }
+    /* No button stays within the .btns container so it never "disappears" */
+    .no{
+      background:#ffffff;
+      color:#ff3b7a;
+      border:2px solid #ff3b7a;
 
-    /* When chasing mode activates, we switch to this */
-    .no.flee {
-      position: fixed;
-      z-index: 9999;
-      transition: left 120ms ease, top 120ms ease;
+      position:absolute;
+      left: calc(50% + 90px);      /* starts next to Yes */
+      top: 50%;
       transform: translate(-50%, -50%);
+      transition: left 120ms ease, top 120ms ease;
+      z-index: 10;
     }
 
-    .hearts {
-      position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 24px;
+    .hearts{
+      position:absolute; inset:0;
+      pointer-events:none;
+      overflow:hidden;
+      border-radius:24px;
     }
-    .heart {
-      position: absolute;
-      font-size: 18px;
-      opacity: .75;
+
+    .heart{
+      position:absolute;
+      font-size:18px;
+      opacity:.75;
       animation: floatUp linear infinite;
       filter: drop-shadow(0 6px 10px rgba(0,0,0,.10));
     }
-    @keyframes floatUp {
-      from { transform: translateY(30px) scale(.9); opacity: 0; }
-      15% { opacity: .8; }
-      to   { transform: translateY(-520px) scale(1.2); opacity: 0; }
+
+    @keyframes floatUp{
+      from { transform: translateY(30px) scale(.9); opacity:0; }
+      15% { opacity:.8; }
+      to { transform: translateY(-520px) scale(1.2); opacity:0; }
     }
 
-    .modal {
-      position: fixed; inset: 0; display: none; place-items: center; padding: 20px;
+    .modal{
+      position:fixed; inset:0;
+      display:none;
+      place-items:center;
+      padding:20px;
       background: rgba(0,0,0,.28);
       z-index: 9998;
     }
-    .modalInner {
-      width: min(520px, 94vw);
-      background: white;
-      border-radius: 22px;
-      padding: 22px;
-      text-align: center;
-      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+
+    .modalInner{
+      width:min(520px, 94vw);
+      background:white;
+      border-radius:22px;
+      padding:22px;
+      text-align:center;
+      box-shadow:0 18px 50px rgba(0,0,0,.22);
     }
-    .big { font-size: 22px; margin: 0 0 10px; }
-    .close { background:#111; color:#fff; }
+
+    .big{ font-size:22px; margin:0 0 10px; }
+    .close{ background:#111; color:#fff; }
   </style>
 </head>
 
@@ -117,7 +127,7 @@
     <h1>Hey <span class="name" id="herName">Love</span> 💖</h1>
     <p>Will you be my Valentine?</p>
 
-    <div class="btns" id="btnRow">
+    <div class="btns">
       <button class="yes" id="yesBtn">Yes 💘</button>
       <button class="no" id="noBtn">No 🙈</button>
     </div>
@@ -161,33 +171,21 @@
     document.getElementById("closeBtn").addEventListener("click", () => modal.style.display = "none");
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
 
-    // No button: cursor CHASES it (it keeps running while cursor is near)
+    // No button: stays within the .btns container and dodges the cursor (cursor "chases" it)
     const noBtn = document.getElementById("noBtn");
+    const btnRow = document.querySelector(".btns");
 
     function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
-    // Put the No button into "flee" mode but keep its current on-screen position
-    function enableFleeMode() {
-      if (noBtn.classList.contains("flee")) return;
-
-      const r = noBtn.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-
-      noBtn.classList.add("flee");
-      noBtn.style.left = `${cx}px`;
-      noBtn.style.top  = `${cy}px`;
-    }
-
     function moveNoAwayFrom(pointerX, pointerY) {
-      enableFleeMode();
+      const row = btnRow.getBoundingClientRect();
+      const b = noBtn.getBoundingClientRect();
 
-      const pad = 16;
-      const rect = noBtn.getBoundingClientRect();
-      const bx = rect.left + rect.width / 2;
-      const by = rect.top + rect.height / 2;
+      // current center of No button (viewport coords)
+      const bx = b.left + b.width / 2;
+      const by = b.top + b.height / 2;
 
-      // vector away from pointer
+      // direction away from pointer
       let dx = bx - pointerX;
       let dy = by - pointerY;
 
@@ -199,34 +197,35 @@
       const len = Math.hypot(dx, dy);
       dx /= len; dy /= len;
 
-      const step = 160; // move distance each dodge
-      const targetX = bx + dx * step;
-      const targetY = by + dy * step;
+      const step = 140; // dodge distance each time
 
-      const minX = pad + rect.width / 2;
-      const maxX = window.innerWidth - pad - rect.width / 2;
-      const minY = pad + rect.height / 2;
-      const maxY = window.innerHeight - pad - rect.height / 2;
+      // target center in viewport coords
+      const targetCX = bx + dx * step;
+      const targetCY = by + dy * step;
 
-      const newCenterX = clamp(targetX, minX, maxX);
-      const newCenterY = clamp(targetY, minY, maxY);
+      // clamp inside the .btns container (keep fully visible)
+      const minCX = row.left + b.width / 2 + 8;
+      const maxCX = row.right - b.width / 2 - 8;
+      const minCY = row.top + b.height / 2 + 8;
+      const maxCY = row.bottom - b.height / 2 - 8;
 
-      noBtn.style.left = `${newCenterX}px`;
-      noBtn.style.top  = `${newCenterY}px`;
+      const newCX = clamp(targetCX, minCX, maxCX);
+      const newCY = clamp(targetCY, minCY, maxCY);
+
+      // set button position relative to container
+      noBtn.style.left = `${newCX - row.left}px`;
+      noBtn.style.top  = `${newCY - row.top}px`;
     }
 
-    // Make it feel like “chasing”: if the cursor stays near, it keeps dodging
-    const chaseRadius = 140;
+    const chaseRadius = 120;
 
     document.addEventListener("mousemove", (e) => {
-      const rect = noBtn.getBoundingClientRect();
-      const bx = rect.left + rect.width / 2;
-      const by = rect.top + rect.height / 2;
+      const b = noBtn.getBoundingClientRect();
+      const bx = b.left + b.width / 2;
+      const by = b.top + b.height / 2;
       const dist = Math.hypot(bx - e.clientX, by - e.clientY);
 
-      if (dist < chaseRadius) {
-        moveNoAwayFrom(e.clientX, e.clientY);
-      }
+      if (dist < chaseRadius) moveNoAwayFrom(e.clientX, e.clientY);
     });
 
     // Mobile: dodge on attempted tap
