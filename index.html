@@ -194,11 +194,24 @@
     
       const her = document.getElementById("herName")?.textContent || "Love";
     
-      // Replace everything inside the card
+      // Replace everything inside the card with a centered layout
       card.innerHTML = `
         <div class="hearts" id="hearts"></div>
-        <h1 style="font-size:54px; margin: 0 0 14px;">YAYYYYYYYYY!!!! 💞</h1>
-        <p style="font-size:20px; margin: 0;">${her}, you’re my Valentine 😘</p>
+    
+        <div style="
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          position: relative;
+          z-index: 2;
+          padding: 20px;
+        ">
+          <h1 style="font-size: 56px; margin: 0 0 14px;">YAYYYYYYYYY!!!! 💞</h1>
+          <p style="font-size: 20px; margin: 0;">You’re my Valentine 😘</p>
+        </div>
       `;
     
       // Restart floating hearts after replacing HTML
