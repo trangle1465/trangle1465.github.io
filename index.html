@@ -7,6 +7,7 @@
   <style>
     :root { --bg1:#fff1f7; --bg2:#ffe7f1; --text:#2a1b22; }
     * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -16,6 +17,7 @@
       background: radial-gradient(circle at top, var(--bg1), var(--bg2));
       overflow: hidden;
     }
+
     .card {
       width: min(520px, 92vw);
       background: rgba(255,255,255,.75);
@@ -28,10 +30,20 @@
       position: relative;
       z-index: 1;
     }
+
     h1 { margin: 0 0 10px; font-size: 34px; }
-    p { margin: 0 0 20px; font-size: 16px; line-height: 1.5; }
+    p  { margin: 0 0 20px; font-size: 16px; line-height: 1.5; }
     .name { font-weight: 700; }
-    .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+
+    .btns {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: nowrap;
+      margin-top: 10px;
+    }
+
     button {
       border: 0;
       padding: 12px 18px;
@@ -42,22 +54,26 @@
       box-shadow: 0 10px 18px rgba(0,0,0,.12);
       user-select: none;
       touch-action: manipulation;
+      white-space: nowrap;
     }
     button:hover { transform: translateY(-1px); }
+
     .yes { background: #ff3b7a; color: white; }
 
-    /* No button: always stays on top and runs away */
+    /* No starts normal (so it sits NEXT TO Yes) */
     .no {
       background: #ffffff;
       color: #ff3b7a;
       border: 2px solid #ff3b7a;
+      position: relative; /* initial layout in the row */
+    }
 
+    /* When chasing mode activates, we switch to this */
+    .no.flee {
       position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      transition: left 140ms ease, top 140ms ease;
       z-index: 9999;
+      transition: left 120ms ease, top 120ms ease;
+      transform: translate(-50%, -50%);
     }
 
     .hearts {
@@ -73,7 +89,7 @@
     @keyframes floatUp {
       from { transform: translateY(30px) scale(.9); opacity: 0; }
       15% { opacity: .8; }
-      to { transform: translateY(-520px) scale(1.2); opacity: 0; }
+      to   { transform: translateY(-520px) scale(1.2); opacity: 0; }
     }
 
     .modal {
@@ -101,7 +117,7 @@
     <h1>Hey <span class="name" id="herName">Love</span> 💖</h1>
     <p>Will you be my Valentine?</p>
 
-    <div class="btns">
+    <div class="btns" id="btnRow">
       <button class="yes" id="yesBtn">Yes 💘</button>
       <button class="no" id="noBtn">No 🙈</button>
     </div>
@@ -145,18 +161,33 @@
     document.getElementById("closeBtn").addEventListener("click", () => modal.style.display = "none");
     modal.addEventListener("click", (e) => { if (e.target === modal) modal.style.display = "none"; });
 
-    // No button runs away from pointer (mouse/touch) — stays on screen
+    // No button: cursor CHASES it (it keeps running while cursor is near)
     const noBtn = document.getElementById("noBtn");
 
     function clamp(v, min, max) { return Math.min(max, Math.max(min, v)); }
 
-    function moveNoAwayFrom(pointerX, pointerY) {
-      const pad = 16;
+    // Put the No button into "flee" mode but keep its current on-screen position
+    function enableFleeMode() {
+      if (noBtn.classList.contains("flee")) return;
 
+      const r = noBtn.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+
+      noBtn.classList.add("flee");
+      noBtn.style.left = `${cx}px`;
+      noBtn.style.top  = `${cy}px`;
+    }
+
+    function moveNoAwayFrom(pointerX, pointerY) {
+      enableFleeMode();
+
+      const pad = 16;
       const rect = noBtn.getBoundingClientRect();
       const bx = rect.left + rect.width / 2;
       const by = rect.top + rect.height / 2;
 
+      // vector away from pointer
       let dx = bx - pointerX;
       let dy = by - pointerY;
 
@@ -168,7 +199,7 @@
       const len = Math.hypot(dx, dy);
       dx /= len; dy /= len;
 
-      const step = 180; // jump distance
+      const step = 160; // move distance each dodge
       const targetX = bx + dx * step;
       const targetY = by + dy * step;
 
@@ -181,21 +212,24 @@
       const newCenterY = clamp(targetY, minY, maxY);
 
       noBtn.style.left = `${newCenterX}px`;
-      noBtn.style.top = `${newCenterY}px`;
-      noBtn.style.transform = "translate(-50%, -50%)";
+      noBtn.style.top  = `${newCenterY}px`;
     }
 
-    // Move when cursor gets close (feels more playful than only on hover)
+    // Make it feel like “chasing”: if the cursor stays near, it keeps dodging
+    const chaseRadius = 140;
+
     document.addEventListener("mousemove", (e) => {
       const rect = noBtn.getBoundingClientRect();
       const bx = rect.left + rect.width / 2;
       const by = rect.top + rect.height / 2;
       const dist = Math.hypot(bx - e.clientX, by - e.clientY);
 
-      if (dist < 120) moveNoAwayFrom(e.clientX, e.clientY);
+      if (dist < chaseRadius) {
+        moveNoAwayFrom(e.clientX, e.clientY);
+      }
     });
 
-    // Mobile: run away when she tries to tap it
+    // Mobile: dodge on attempted tap
     noBtn.addEventListener("touchstart", (e) => {
       const t = e.touches[0];
       moveNoAwayFrom(t.clientX, t.clientY);
@@ -210,7 +244,7 @@
         s.textContent = ["✨","💖","🎉","💘"][Math.floor(Math.random()*4)];
         s.style.position = "fixed";
         s.style.left = (window.innerWidth/2) + "px";
-        s.style.top = (window.innerHeight/2) + "px";
+        s.style.top  = (window.innerHeight/2) + "px";
         s.style.fontSize = (12 + Math.random()*14) + "px";
         s.style.pointerEvents = "none";
         s.style.zIndex = 9997;
